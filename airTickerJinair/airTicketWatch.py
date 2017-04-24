@@ -1,6 +1,9 @@
-import json
+#-*- coding: utf-8 -*-
+
 import urllib2
+from slack_token import WHALE_BOT_TOKEN, CHANNEL
 from BeautifulSoup import BeautifulSoup
+from slacker import Slacker
 
 url = "https://www.jinair.com/RSV/RSV_ScheduleSelect.aspx"
 data = """------WebKitFormBoundaryUAB9MQz8HGYVTZcI
@@ -104,7 +107,46 @@ response = urllib2.urlopen(req, data)
 
 doc = response.read()
 
-print response.read()
+# HTML 페이지 저장.
+# f = open("./doc.html", "w")
+# f.write(doc)
 
-f = open("./doc.html", "w")
-f.write(doc)
+soup = BeautifulSoup(doc)
+target = soup.findAll("td", style="text-align: right; padding-right: 4px;")
+
+
+# 파일 저장
+for i in xrange(20, 28):
+    f = open("./data/" + str(i) + ".txt", "w")
+    f.write(str(target[i]))
+    f.close()
+
+
+# 파일 읽기
+def get_file(file_name):
+    f = open("./data/" + file_name + ".txt", 'r')
+    txt = ""
+    while True:
+        line = f.readline()
+        if not line:
+            break
+        txt = txt + line
+    f.close()
+    return txt
+
+# 비교 후 슬렉 메세징
+for i in xrange(20, 28):
+    file_data = get_file(str(i))
+    if file_data == str(target[i]):
+        print "ok"
+    else:
+        print "sendSlack"
+        print "origin " + "=" * 80
+        print file_data
+        print "current " + "=" * 80
+        print str(target[i])
+        token = WHALE_BOT_TOKEN
+        slack = Slacker(token)
+        slack.chat.post_message(CHANNEL, 'BBOOOO!!')
+
+
