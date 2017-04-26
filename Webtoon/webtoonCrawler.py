@@ -8,8 +8,8 @@ from urlparse import urlparse, parse_qs
 from bs4 import BeautifulSoup
 from PIL import Image
 
-WEBTOON_ID = 20853 #마음의 소리
-
+WEBTOON_ID = 119874 #마음의 소리
+miss_count = 0
 
 def run():
     for i in xrange(1, 10000):
@@ -19,20 +19,23 @@ def run():
 def crawl(webtoon_id, no):
     url = get_url(webtoon_id, no)
     markup = get_markup(url)
+    global miss_count
     if markup:
         webtoon = ParsedMarkup(markup)
+        webtoon_image = get_webtoon_image(webtoon.get_image_url_list())
+        webtoon_name = webtoon.get_webtoon_name()
+        webtoon_title = webtoon.get_webtoon_title()
+
+        make_directory_if_not_exist(webtoon_name)
+        path = os.path.join(webtoon_name, str(no).zfill(5) + "." + webtoon_title + ".jpg")
+        webtoon_image.save(path)
+        miss_count = 0
+        print path
     else:
+        miss_count += 1
         print "해당 회차의 웹툰이 존재하지 않습니다."
-        exit(0)
-
-    webtoon_image = get_webtoon_image(webtoon.get_image_url_list())
-    webtoon_name = webtoon.get_webtoon_name()
-    webtoon_title = webtoon.get_webtoon_title()
-
-    make_directory_if_not_exist(webtoon_name)
-    path = os.path.join(webtoon_name, str(no).zfill(5) + "." + webtoon_title + ".jpg")
-    webtoon_image.save(path)
-    print path
+        if miss_count >= 3:
+            exit(0)
 
 
 class ParsedMarkup:
