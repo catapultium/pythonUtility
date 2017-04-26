@@ -8,7 +8,7 @@ from urlparse import urlparse, parse_qs
 from bs4 import BeautifulSoup
 from PIL import Image
 
-WEBTOON_ID = 119874 #마음의 소리
+WEBTOON_ID = 20853
 miss_count = 0
 
 def run():
