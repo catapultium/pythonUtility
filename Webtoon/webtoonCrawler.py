@@ -11,6 +11,7 @@ from PIL import Image
 WEBTOON_ID = 20853
 miss_count = 0
 
+
 def run():
     for i in xrange(1, 10000):
         crawl(WEBTOON_ID, i)
@@ -22,15 +23,24 @@ def crawl(webtoon_id, no):
     global miss_count
     if markup:
         webtoon = ParsedMarkup(markup)
-        webtoon_image = get_webtoon_image(webtoon.get_image_url_list())
+        webtoon_images = get_webtoon_images(webtoon.get_image_url_list())
         webtoon_name = webtoon.get_webtoon_name()
         webtoon_title = webtoon.get_webtoon_title()
 
         make_directory_if_not_exist(webtoon_name)
-        path = os.path.join(webtoon_name, str(no).zfill(5) + "." + webtoon_title + ".jpg")
-        webtoon_image.save(path)
+        default_path = os.path.join(webtoon_name, str(no).zfill(5) + "." + webtoon_title)
+
+        if len(webtoon_images) == 1:
+            path = default_path + ".jpg"
+            webtoon_images[0].save(path)
+            print path
+        else:
+            for i in xrange(len(webtoon_images)):
+                path = default_path + "[" + str(i) + "]" + ".jpg"
+                webtoon_images[i].save(path)
+                print path
+
         miss_count = 0
-        print path
     else:
         miss_count += 1
         print "해당 회차의 웹툰이 존재하지 않습니다."
@@ -89,8 +99,27 @@ def get_image_from_url(url):
     return Image.open(image_file)
 
 
-def merge_image_vertical(image_list):
-    new_image = Image.new("RGB", get_image_size_vertical(image_list), (256, 256, 256))
+def get_merge_vertical_images(image_list, limit_height):
+    start_image_idx = 0
+    images = []
+
+    x = image_list[0].size[0]
+    y = 0
+
+    for image in image_list:
+        y += image.size[1]
+        if y > limit_height:
+            end_image_index = image_list.index(image)
+            images.append(create_image(image_list[start_image_idx: end_image_index], (x, y - image.size[1])))
+            y = image.size[1]
+            start_image_idx = end_image_index
+
+    images.append(create_image(image_list[start_image_idx:], (x, y)))
+    return images
+
+
+def create_image(image_list, image_size):
+    new_image = Image.new("RGB", image_size, (256, 256, 256))
     position_y = 0
     for image in image_list:
         new_image.paste(image, (0, position_y))
@@ -106,12 +135,13 @@ def get_image_size_vertical(image_list):
     return x, y
 
 
-def get_webtoon_image(url_list):
+# 65500 보다 큰 이미지 생성 불가.
+def get_webtoon_images(url_list, limit_height=60000):
     image_list = []
     for url in url_list:
         image_list.append(get_image_from_url(url))
 
-    return merge_image_vertical(image_list)
+    return get_merge_vertical_images(image_list, limit_height)
 
 
 def make_directory_if_not_exist(path):
